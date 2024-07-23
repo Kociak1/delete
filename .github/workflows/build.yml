@@ -15,7 +15,7 @@ jobs:
 
     - name: Build the hello_world_main.c
       run: |
-        gcc hello_world_main.c -o hello_world
+        gcc main.c -o hello_world
 
     - name: Get the current date and time
       id: get_datetime
