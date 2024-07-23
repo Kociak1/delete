@@ -5,86 +5,30 @@ on:
     branches:
       - main
   workflow_dispatch:
-
+  
 jobs:
-  build-linux:
+  build:
     runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-    - name: Install build tools
-      run: sudo apt-get update && sudo apt-get install -y build-essential
-    - name: Build the project
-      run: gcc -o my_program main.c
-    - name: Archive the build
-      run: zip my_program_linux.zip my_program
-    - name: Upload artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: my_program_linux
-        path: my_program_linux.zip
 
-  build-windows:
-    runs-on: windows-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
-    - name: Install build tools
-      run: choco install -y mingw
-    - name: Build the project
-      run: gcc -o my_program.exe main.c
-    - name: Archive the build
-      run: powershell Compress-Archive -Path my_program.exe -DestinationPath my_program_windows.zip
-    - name: Upload artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: my_program_windows
-        path: my_program_windows.zip
+      uses: actions/checkout@v2
 
-  release:
-    needs: [build-linux, build-windows]
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-    - name: Download Linux build
-      uses: actions/download-artifact@v3
-      with:
-        name: my_program_linux
-        path: ./dist
-    - name: Download Windows build
-      uses: actions/download-artifact@v3
-      with:
-        name: my_program_windows
-        path: ./dist
-    - name: Create tag
-      id: create_tag
+    - name: Build the hello_world_main.c
       run: |
-        TAG_NAME=$(date +%Y%m%d%H%M%S)
-        git tag $TAG_NAME
-        git push origin $TAG_NAME
-        echo "::set-output name=tag::$TAG_NAME"
+        gcc hello_world_main.c -o hello_world
+
+    - name: Archive hello_world binary
+      run: |
+        zip hello_world.zip hello_world
+
     - name: Create release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ steps.create_tag.outputs.tag }}
-        release_name: Release ${{ steps.create_tag.outputs.tag }}
-        draft: false
-        prerelease: false
-    - name: Upload Linux Asset
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/my_program_linux.zip
-        asset_name: my_program_linux.zip
-        asset_content_type: application/zip
-    - name: Upload Windows Asset
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/my_program_windows.zip
-        asset_name: my_program_windows.zip
-        asset_content_type: application/zip
+        tag_name: "v${{ github.run_number }}"
+        release_name: "Release ${{ github.run_number }}"
+        body: "Automatic release from workflow run ${{ github.run_number }}."
+        files: hello_world.zip
