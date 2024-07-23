@@ -1,0 +1,31 @@
+name: Create GitHub Release
+
+on:
+  push:
+    branches:
+      - main  # Zmienna, która uruchamia workflow przy każdym pushu na gałąź main
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create a new tag
+        run: |
+          TAG_NAME="v1.0.0"  # Możesz dostosować nazwę tagu
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name"
+          git tag -a $TAG_NAME -m "Release $TAG_NAME"
+          git push origin $TAG_NAME
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: v1.0.0  # Używamy samej nazwy tagu
+          release_name: Release v1.0.0
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
