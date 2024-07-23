@@ -13,7 +13,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
     - name: Install build tools
-      run: sudo apt-get install -y build-essential
+      run: sudo apt-get update && sudo apt-get install -y build-essential
     - name: Build the project
       run: |
         gcc -o my_program main.c
@@ -31,12 +31,12 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
     - name: Install build tools
-      run: choco install make
+      run: choco install -y mingw
     - name: Build the project
       run: |
         gcc -o my_program.exe main.c
     - name: Archive the build
-      run: powershell Compress-Archive my_program.exe my_program_windows.zip
+      run: powershell Compress-Archive -Path my_program.exe -DestinationPath my_program_windows.zip
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
@@ -58,7 +58,7 @@ jobs:
         name: my_program_windows
         path: ./dist
     - name: Create release
-      uses: actions/create-release@v3
+      uses: actions/create-release@latest
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -66,6 +66,17 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: false
         prerelease: false
-        files: |
-          ./dist/my_program_linux.zip
-          ./dist/my_program_windows.zip
+    - name: Upload Release Assets
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/my_program_linux.zip
+        asset_name: my_program_linux.zip
+        asset_content_type: application/zip
+    - name: Upload Release Assets
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/my_program_windows.zip
+        asset_name: my_program_windows.zip
+        asset_content_type: application/zip
