@@ -15,11 +15,7 @@ jobs:
 
     - name: Build the hello_world_main.c
       run: |
-        gcc main.c -o hello_world
-
-    - name: Archive hello_world binary
-      run: |
-        zip hello_world.zip hello_world
+        gcc hello_world_main.c -o hello_world
 
     - name: Get the current date and time
       id: get_datetime
@@ -34,4 +30,4 @@ jobs:
         tag_name: ${{ env.RELEASE_TAG }}
         release_name: "Release ${{ env.RELEASE_TAG }}"
         body: "Automatic release from workflow run ${{ github.run_number }}."
-        files: hello_world.zip
+        files: hello_world
