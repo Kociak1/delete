@@ -66,7 +66,7 @@ jobs:
         echo "::set-output name=tag::$TAG_NAME"
     - name: Create release
       id: create_release
-      uses: actions/create-release@latest
+      uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
