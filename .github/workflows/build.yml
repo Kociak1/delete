@@ -2,8 +2,8 @@ name: Build and Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -15,8 +15,7 @@ jobs:
     - name: Install build tools
       run: sudo apt-get update && sudo apt-get install -y build-essential
     - name: Build the project
-      run: |
-        gcc -o my_program main.c
+      run: gcc -o my_program main.c
     - name: Archive the build
       run: zip my_program_linux.zip my_program
     - name: Upload artifact
@@ -33,8 +32,7 @@ jobs:
     - name: Install build tools
       run: choco install -y mingw
     - name: Build the project
-      run: |
-        gcc -o my_program.exe main.c
+      run: gcc -o my_program.exe main.c
     - name: Archive the build
       run: powershell Compress-Archive -Path my_program.exe -DestinationPath my_program_windows.zip
     - name: Upload artifact
@@ -47,6 +45,8 @@ jobs:
     needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
     - name: Download Linux build
       uses: actions/download-artifact@v3
       with:
@@ -57,23 +57,30 @@ jobs:
       with:
         name: my_program_windows
         path: ./dist
+    - name: Create tag
+      id: create_tag
+      run: |
+        TAG_NAME=$(date +%Y%m%d%H%M%S)
+        git tag $TAG_NAME
+        git push origin $TAG_NAME
+        echo "::set-output name=tag::$TAG_NAME"
     - name: Create release
       uses: actions/create-release@latest
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        tag_name: ${{ steps.create_tag.outputs.tag }}
+        release_name: Release ${{ steps.create_tag.outputs.tag }}
         draft: false
         prerelease: false
-    - name: Upload Release Assets
+    - name: Upload Linux Asset
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./dist/my_program_linux.zip
         asset_name: my_program_linux.zip
         asset_content_type: application/zip
-    - name: Upload Release Assets
+    - name: Upload Windows Asset
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
