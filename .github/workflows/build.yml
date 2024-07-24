@@ -1,33 +1,66 @@
-name: Build and Release
+name: C Build and Release
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
+    - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Build the hello_world_main.c
+    - name: Install build dependencies
+      run: sudo apt-get install -y build-essential
+
+    - name: Compile the program
+      run: gcc -o my_program main.c 
+
+    - name: Create artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: my_program
+        path: my_program
+
+  tag_and_release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Download artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: my_program
+        path: .
+
+    - name: Create tag
+      id: create_tag
       run: |
-        gcc main.c -o hello_world
+        TAG_NAME=$(date +'%Y%m%d%H%M%S')
+        echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+        git tag $TAG_NAME
+        git push origin $TAG_NAME
 
-    - name: Get the current date and time
-      id: get_datetime
-      run: echo "RELEASE_TAG=v$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
-
-    - name: Create release
+    - name: Create GitHub Release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ env.RELEASE_TAG }}
-        release_name: "Release ${{ env.RELEASE_TAG }}"
-        body: "Automatic release from workflow run ${{ github.run_number }}."
-        files: hello_world
+        tag_name: ${{ env.TAG_NAME }}
+        release_name: Release ${{ env.TAG_NAME }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./my_program
+        asset_name: my_program
+        asset_content_type: application/octet-stream
