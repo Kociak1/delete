@@ -1,4 +1,4 @@
-name: C Build and Release for windows
+name: C Build and Release
 
 on:
   workflow_dispatch:
@@ -11,16 +11,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Set up MinGW
-      uses: egor-tensin/setup-mingw@v1
-      with:
-        architecture: x64
-
-    - name: Add MinGW to PATH
-      run: echo "::add-path::${{ runner.tool_cache }}\\mingw64\\bin"
+    - name: Install MinGW
+      run: |
+        choco install mingw -y
+        echo "::add-path::C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin"
 
     - name: Compile the program
-      run: gcc -o my_program.exe main.c  # Zmień "main.c" na swoją główną ścieżkę pliku C
+      run: gcc -o my_program.exe main.c  
 
     - name: Create artifact
       uses: actions/upload-artifact@v2
