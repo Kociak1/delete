@@ -1,0 +1,71 @@
+name: C Build and Release for windows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up MinGW
+      uses: egor-tensin/setup-mingw@v1
+      with:
+        architecture: x64
+
+    - name: Add MinGW to PATH
+      run: echo "::add-path::${{ runner.tool_cache }}\\mingw64\\bin"
+
+    - name: Compile the program
+      run: gcc -o my_program.exe main.c  # Zmień "main.c" na swoją główną ścieżkę pliku C
+
+    - name: Create artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: my_program
+        path: my_program.exe
+
+  tag_and_release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Download artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: my_program
+        path: .
+
+    - name: Create tag
+      id: create_tag
+      run: |
+        TAG_NAME=$(date +'%Y%m%d%H%M%S')
+        echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+        git tag $TAG_NAME
+        git push origin $TAG_NAME
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.TAG_NAME }}
+        release_name: Release ${{ env.TAG_NAME }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./my_program.exe
+        asset_name: my_program.exe
+        asset_content_type: application/octet-stream
